@@ -16,14 +16,10 @@ fn parse_input(inpt: &str) -> Vec<isize> {
     inpt.lines().map(parse_line).collect()
 }
 
-fn mod_(i: isize, n: isize) -> isize {
-    if i < 0 { n - (i.abs() % n) } else { i % n }
-}
-
 fn day_1(inpt: &[isize]) -> isize {
     inpt.iter()
         .fold((50, 0), |(s, c), i| {
-            let s_ = mod_(s + i, 100);
+            let s_ = (s + i).rem_euclid(100);
             (s_, c + if s_ == 0 { 1 } else { 0 })
         })
         .1
@@ -42,7 +38,7 @@ fn day_1_part2(inpt: &[isize]) -> isize {
             } else {
                 (100 - s - i) / 100
             };
-            (mod_(s + i, 100), c + part_turns + full_turns.abs())
+            ((s + i).rem_euclid(100), c + part_turns + full_turns.abs())
         })
         .1
 }
@@ -62,12 +58,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{day_1, day_1_part2, mod_, parse_input};
-
-    #[test]
-    fn mod_neg_21() {
-        assert_eq!(mod_(-21, 10), 9);
-    }
+    use super::{day_1, day_1_part2, parse_input};
 
     const STR_INPT: &str = "L68
 L30
