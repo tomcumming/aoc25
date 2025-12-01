@@ -1,4 +1,7 @@
-use std::io::{self, Read};
+use std::{
+    env,
+    io::{self, Read},
+};
 
 fn parse_input(inpt: &str) -> Vec<isize> {
     fn parse_line(line: &str) -> isize {
@@ -13,29 +16,60 @@ fn parse_input(inpt: &str) -> Vec<isize> {
     inpt.lines().map(parse_line).collect()
 }
 
+fn mod_(i: isize, n: isize) -> isize {
+    if i < 0 { n - (i.abs() % n) } else { i % n }
+}
+
 fn day_1(inpt: &[isize]) -> isize {
     inpt.iter()
         .fold((50, 0), |(s, c), i| {
-            let s_ = (s + i) % 100;
+            let s_ = mod_(s + i, 100);
             (s_, c + if s_ == 0 { 1 } else { 0 })
         })
         .1
 }
 
+fn day_1_part2(inpt: &[isize]) -> isize {
+    inpt.iter()
+        .fold((50, 0), |(s, c), j| {
+            let full_turns = (*j) / 100;
+            let i = *j - full_turns * 100;
+            // grim
+            let part_turns = if i >= 0 {
+                (s + i) / 100
+            } else if s == 0 {
+                0
+            } else {
+                (100 - s - i) / 100
+            };
+            (mod_(s + i, 100), c + part_turns + full_turns.abs())
+        })
+        .1
+}
+
 fn main() {
+    let args: Vec<String> = env::args().collect();
     let mut str_input = String::new();
     io::stdin().read_to_string(&mut str_input).unwrap();
-    let out = day_1(&parse_input(&str_input));
+    let inpt = parse_input(&str_input);
+    let out = match args.as_slice() {
+        [_] => day_1(&inpt),
+        [_, s] if s == "part2" => day_1_part2(&inpt),
+        _ => panic!("Unexpected args"),
+    };
     println!("{}", out);
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{day_1, parse_input};
+    use super::{day_1, day_1_part2, mod_, parse_input};
 
     #[test]
-    fn example() {
-        let str_inpt = "L68
+    fn mod_neg_21() {
+        assert_eq!(mod_(-21, 10), 9);
+    }
+
+    const STR_INPT: &str = "L68
 L30
 R48
 L5
@@ -46,8 +80,16 @@ L99
 R14
 L82";
 
-        let inpt = &parse_input(str_inpt);
+    #[test]
+    fn example() {
+        let inpt = &parse_input(STR_INPT);
 
         assert_eq!(day_1(inpt), 3);
+    }
+    #[test]
+    fn example_part2() {
+        let inpt = &parse_input(STR_INPT);
+
+        assert_eq!(day_1_part2(inpt), 6);
     }
 }
