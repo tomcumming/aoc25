@@ -28,8 +28,27 @@ fn day_2(inpt: &[(u64, u64)]) -> u64 {
         .sum()
 }
 
-fn day_2_part2(_inpt: &[(u64, u64)]) -> u64 {
-    todo!()
+// Lazy day ;)
+fn day_2_part2(inpt: &[(u64, u64)]) -> u64 {
+    fn equal_length_splits(n: u64) -> Vec<Vec<String>> {
+        let s = n.to_string();
+        (1..=s.len() / 2)
+            .filter(|m| s.len().is_multiple_of(*m))
+            .map(|m| {
+                let o = s.len() / m;
+                (0..o).map(|p| s[p * m..(p + 1) * m].to_string()).collect()
+            })
+            .collect()
+    }
+
+    fn all_equal(ss: Vec<String>) -> bool {
+        ss.iter().all(|s| s == &ss[0])
+    }
+
+    inpt.iter()
+        .cloned()
+        .flat_map(|(l, h)| (l..=h).filter(|n| equal_length_splits(*n).into_iter().any(all_equal)))
+        .sum()
 }
 
 fn main() {
@@ -47,6 +66,8 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use crate::day_2_part2;
+
     use super::{day_2, parse_input};
 
     const STR_INPT: &str = "11-22,95-115,998-1012,1188511880-1188511890,222220-222224,1698522-1698528,446443-446449,38593856-38593862,565653-565659,824824821-824824827,2121212118-2121212124";
@@ -56,5 +77,11 @@ mod tests {
         let inpt = &parse_input(STR_INPT);
 
         assert_eq!(day_2(inpt), 1227775554);
+    }
+    #[test]
+    fn example2() {
+        let inpt = &parse_input(STR_INPT);
+
+        assert_eq!(day_2_part2(inpt), 4174379265);
     }
 }
