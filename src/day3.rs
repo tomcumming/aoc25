@@ -9,23 +9,38 @@ fn parse_input(inpt: &str) -> Vec<Vec<u8>> {
         .collect()
 }
 
-fn day_2(inpt: &[Vec<u8>]) -> u64 {
+fn max_left_most(tail_len: usize, digits: &[u8]) -> Option<(u8, &[u8])> {
+    (0..digits.len() - tail_len)
+        .rev()
+        .map(|i| (digits[i], &digits[i + 1..]))
+        .max_by_key(|(d, _)| *d)
+}
+
+fn max_digits_reversed(count: usize, digits: &[u8]) -> Option<Vec<u8>> {
+    if count == 0 {
+        return Some(Vec::new());
+    }
+
+    let (d, our_tail_digits) = max_left_most(count - 1, digits)?;
+    let mut tail_digits = max_digits_reversed(count - 1, our_tail_digits)?;
+    tail_digits.push(d);
+    Some(tail_digits)
+}
+
+fn reverse_digits_to_number(digits: &[u8]) -> u64 {
+    digits.iter().cloned().rfold(0, |p, c| p * 10 + c as u64)
+}
+
+fn day_3(inpt: &[Vec<u8>]) -> u64 {
     inpt.iter()
-        .map(|digits| {
-            let rev_tails = (0..digits.len() - 1)
-                .rev()
-                .map(|i| (digits[i], &digits[i + 1..]));
-
-            let (d1, ds) = rev_tails.max_by_key(|(d, _)| *d).unwrap();
-            let d2 = ds.iter().max().cloned().unwrap();
-
-            (d1 * 10 + d2) as u64
-        })
+        .map(|digits| reverse_digits_to_number(&max_digits_reversed(2, digits).unwrap()))
         .sum()
 }
 
-fn day_2_part2(_inpt: &[Vec<u8>]) -> u64 {
-    todo!()
+fn day_3_part2(inpt: &[Vec<u8>]) -> u64 {
+    inpt.iter()
+        .map(|digits| reverse_digits_to_number(&max_digits_reversed(12, digits).unwrap()))
+        .sum()
 }
 
 fn main() {
@@ -34,8 +49,8 @@ fn main() {
     io::stdin().read_to_string(&mut str_input).unwrap();
     let inpt = parse_input(&str_input);
     let out = match args.as_slice() {
-        [_] => day_2(&inpt),
-        [_, s] if s == "part2" => day_2_part2(&inpt),
+        [_] => day_3(&inpt),
+        [_, s] if s == "part2" => day_3_part2(&inpt),
         _ => panic!("Unexpected args"),
     };
     println!("{}", out);
@@ -43,7 +58,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{day_2, parse_input};
+    use super::{day_3, day_3_part2, parse_input};
 
     const STR_INPT: &str = "987654321111111
 811111111111119
@@ -54,6 +69,13 @@ mod tests {
     fn example() {
         let inpt = &parse_input(STR_INPT);
 
-        assert_eq!(day_2(inpt), 357);
+        assert_eq!(day_3(inpt), 357);
+    }
+
+    #[test]
+    fn example2() {
+        let inpt = &parse_input(STR_INPT);
+
+        assert_eq!(day_3_part2(inpt), 3121910778619);
     }
 }
