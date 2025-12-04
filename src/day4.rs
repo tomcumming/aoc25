@@ -44,24 +44,23 @@ fn day_4(inpt: &[Vec<bool>]) -> usize {
 
 fn day_4_part2(mut inpt: Vec<Vec<bool>>) -> usize {
     let width = inpt[0].len();
-    let mut removed = 0;
 
-    loop {
+    std::iter::from_fn(|| {
         let mask: Vec<(usize, usize)> = (0..width)
             .flat_map(|x| (0..inpt.len()).map(move |y| (x, y)))
             .filter(|(x, y)| inpt[*y][*x])
             .filter(|(x, y)| count_neighbours(&inpt, *x, *y) < 4)
             .collect();
         if mask.is_empty() {
-            break;
+            None
+        } else {
+            for (x, y) in mask.iter().cloned() {
+                inpt[y][x] = false;
+            }
+            Some(mask.len())
         }
-        removed += mask.len();
-        for (x, y) in mask {
-            inpt[y][x] = false;
-        }
-    }
-
-    removed
+    })
+    .sum()
 }
 
 fn main() {
