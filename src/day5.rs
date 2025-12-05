@@ -35,8 +35,32 @@ fn day_5((ranges, ids): &(Vec<(usize, usize)>, Vec<usize>)) -> usize {
         .len()
 }
 
-fn day_5_part2(_inpt: &(Vec<(usize, usize)>, Vec<usize>)) -> usize {
-    todo!()
+fn day_5_part2((ranges, _ids): &(Vec<(usize, usize)>, Vec<usize>)) -> usize {
+    let mut sorted_ranges = ranges.clone();
+    sorted_ranges.sort();
+
+    let mut total = 0;
+    let mut prev: Option<(usize, usize)> = None;
+
+    for (low, high) in sorted_ranges {
+        prev = match prev {
+            None => Some((low, high)),
+            Some((low2, high2)) if high2 < low => {
+                total += high2 + 1 - low2;
+                Some((low, high))
+            }
+            Some((low2, high2)) => Some((low2, usize::max(high, high2))),
+        }
+    }
+
+    match prev {
+        None => {}
+        Some((low, high)) => {
+            total += high + 1 - low;
+        }
+    }
+
+    total
 }
 
 fn main() {
@@ -54,7 +78,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{day_5, parse_input};
+    use super::{day_5, day_5_part2, parse_input};
 
     const STR_INPT: &str = "3-5
 10-14
@@ -73,5 +97,12 @@ mod tests {
         let inpt = &parse_input(STR_INPT);
 
         assert_eq!(day_5(inpt), 3);
+    }
+
+    #[test]
+    fn example2() {
+        let inpt = &parse_input(STR_INPT);
+
+        assert_eq!(day_5_part2(inpt), 14);
     }
 }
