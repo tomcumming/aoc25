@@ -39,28 +39,23 @@ fn day_5_part2((ranges, _ids): &(Vec<(usize, usize)>, Vec<usize>)) -> usize {
     let mut sorted_ranges = ranges.clone();
     sorted_ranges.sort();
 
-    let mut total = 0;
-    let mut prev: Option<(usize, usize)> = None;
+    let (total, prev) = sorted_ranges
+        .into_iter()
+        .fold((0, None), |(total, prev), (low, high)| {
+            let (added, prev) = match prev {
+                None => (0, Some((low, high))),
+                Some((low2, high2)) if high2 < low => (high2 + 1 - low2, Some((low, high))),
+                Some((low2, high2)) => (0, Some((low2, usize::max(high, high2)))),
+            };
+            (total + added, prev)
+        });
 
-    for (low, high) in sorted_ranges {
-        prev = match prev {
-            None => Some((low, high)),
-            Some((low2, high2)) if high2 < low => {
-                total += high2 + 1 - low2;
-                Some((low, high))
-            }
-            Some((low2, high2)) => Some((low2, usize::max(high, high2))),
-        }
-    }
+    let final_add = match prev {
+        None => 0,
+        Some((low, high)) => high + 1 - low,
+    };
 
-    match prev {
-        None => {}
-        Some((low, high)) => {
-            total += high + 1 - low;
-        }
-    }
-
-    total
+    total + final_add
 }
 
 fn main() {
