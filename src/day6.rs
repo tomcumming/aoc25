@@ -8,21 +8,16 @@ enum Op {
     Mul,
 }
 
-fn parse_input(inpt: &str) -> (Vec<Vec<usize>>, Vec<Op>) {
-    fn line_is_num_row(l: &str) -> bool {
-        l.chars()
-            .find(|c| !c.is_whitespace())
-            .unwrap()
-            .is_ascii_digit()
-    }
-    let numbers = inpt
+fn parse_input(inpt: &str) -> (Vec<Vec<char>>, Vec<Op>) {
+    let line_count = inpt.lines().count();
+    let ls = inpt
         .lines()
-        .take_while(|l| line_is_num_row(l))
-        .map(|l| l.split_whitespace().map(|n| n.parse().unwrap()).collect())
+        .take(line_count - 1)
+        .map(|l| l.chars().collect())
         .collect();
     let ops = inpt
         .lines()
-        .find(|l| !line_is_num_row(l))
+        .last()
         .map(|l| {
             l.split_whitespace()
                 .map(|o| match o {
@@ -33,10 +28,16 @@ fn parse_input(inpt: &str) -> (Vec<Vec<usize>>, Vec<Op>) {
                 .collect()
         })
         .unwrap();
-    (numbers, ops)
+    (ls, ops)
 }
 
-fn day_6((numbers, ops): &(Vec<Vec<usize>>, Vec<Op>)) -> usize {
+fn day_6((lines, ops): &(Vec<Vec<char>>, Vec<Op>)) -> usize {
+    let numbers: Vec<Vec<usize>> = lines
+        .iter()
+        .map(|cs| cs.iter().collect())
+        .map(|l: String| l.split_whitespace().map(|s| s.parse().unwrap()).collect())
+        .collect();
+
     let col_count = numbers[0].len();
     (0..col_count)
         .map(|x| {
@@ -49,8 +50,38 @@ fn day_6((numbers, ops): &(Vec<Vec<usize>>, Vec<Op>)) -> usize {
         .sum()
 }
 
-fn day_6_part2(_inpt: &(Vec<Vec<usize>>, Vec<Op>)) -> usize {
-    todo!()
+fn group_cols(mut cols: Vec<String>) -> Vec<Vec<usize>> {
+    let mut groups = Vec::new();
+
+    while !cols.is_empty() {
+        let mut group = Vec::new();
+        while let Some(s) = cols.pop() {
+            if s.trim().is_empty() {
+                break;
+            } else {
+                group.push(s.trim().parse().unwrap());
+            }
+        }
+        groups.push(group);
+    }
+
+    groups.reverse();
+    groups
+}
+
+fn day_6_part2((inpt_ls, ops): &(Vec<Vec<char>>, Vec<Op>)) -> usize {
+    let line_len = inpt_ls[0].len();
+    let all_cols = (0..line_len)
+        .map(|x| inpt_ls.iter().map(|l| l[x]).collect::<String>())
+        .collect();
+    group_cols(all_cols)
+        .into_iter()
+        .zip(ops)
+        .map(|(ns, op)| match op {
+            Op::Add => ns.iter().sum::<usize>(),
+            Op::Mul => ns.iter().product(),
+        })
+        .sum()
 }
 
 fn main() {
@@ -68,7 +99,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{day_6, parse_input};
+    use super::{day_6, day_6_part2, parse_input};
 
     const STR_INPT: &str = "123 328  51 64 
  45 64  387 23 
@@ -80,5 +111,12 @@ mod tests {
         let inpt = &parse_input(STR_INPT);
 
         assert_eq!(day_6(inpt), 4277556);
+    }
+
+    #[test]
+    fn example2() {
+        let inpt = &parse_input(STR_INPT);
+
+        assert_eq!(day_6_part2(inpt), 3263827);
     }
 }
