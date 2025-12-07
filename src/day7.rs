@@ -4,15 +4,14 @@ use std::{
 };
 
 fn day_7_part_1(inpt: &str) -> usize {
-    let (width, start_x) = {
-        let first_line = inpt.lines().next().unwrap();
-        let start_x = first_line
-            .char_indices()
-            .find(|(_, c)| *c == 'S')
-            .map(|(i, _)| i)
-            .unwrap();
-        (first_line.len(), start_x)
-    };
+    let start_x = inpt
+        .lines()
+        .next()
+        .unwrap()
+        .char_indices()
+        .find(|(_, c)| *c == 'S')
+        .map(|(i, _)| i)
+        .unwrap();
 
     let (splits, _) = inpt.lines().fold(
         (0, [start_x].into_iter().collect::<BTreeSet<usize>>()),
@@ -24,12 +23,7 @@ fn day_7_part_1(inpt: &str) -> usize {
                 .filter(|x| line[*x] == '.' || line[*x] == 'S')
                 .collect();
             let split = beams.iter().cloned().filter(|x| line[*x] == '^');
-            let children: BTreeSet<usize> = split
-                .clone()
-                .flat_map(|x| [x as isize - 1, x as isize + 1])
-                .filter(|x| *x >= 0 && *x < width as isize)
-                .map(|x| x as usize)
-                .collect();
+            let children: BTreeSet<usize> = split.clone().flat_map(|x| [x - 1, x + 1]).collect();
 
             (
                 splits + split.count(),
@@ -42,15 +36,14 @@ fn day_7_part_1(inpt: &str) -> usize {
 }
 
 fn day_7_part_2(inpt: &str) -> usize {
-    let (width, start_x) = {
-        let first_line = inpt.lines().next().unwrap();
-        let start_x = first_line
-            .char_indices()
-            .find(|(_, c)| *c == 'S')
-            .map(|(i, _)| i)
-            .unwrap();
-        (first_line.len(), start_x)
-    };
+    let start_x = inpt
+        .lines()
+        .next()
+        .unwrap()
+        .char_indices()
+        .find(|(_, c)| *c == 'S')
+        .map(|(i, _)| i)
+        .unwrap();
 
     let beam_counts = inpt.lines().fold(
         [(start_x, 1)]
@@ -64,11 +57,9 @@ fn day_7_part_2(inpt: &str) -> usize {
                 .filter(|(x, _)| line[*x] == '.' || line[*x] == 'S');
             let split = beam_counts
                 .iter()
-                .map(|(k, v)| (*k, *v)) // why not cloned?
+                .map(|(k, v)| (*k, *v))
                 .filter(|(x, _)| line[*x] == '^')
-                .flat_map(|(k, v)| [(k as isize - 1, v), (k as isize + 1, v)])
-                .filter(|(k, _)| *k >= 0 && *k < width as isize)
-                .map(|(k, v)| (k as usize, v));
+                .flat_map(|(k, v)| [(k - 1, v), (k + 1, v)]);
 
             not_split
                 .chain(split)
