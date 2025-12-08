@@ -12,7 +12,7 @@ fn mag2(a: &Vec<isize>, b: &Vec<isize>) -> usize {
         .sum()
 }
 
-fn day_8_part_1(inpt: &str, connections: usize) -> usize {
+fn setup(inpt: &str) -> (Vec<Vec<isize>>, Vec<(usize, usize)>, Vec<BTreeSet<usize>>) {
     let coords: Vec<Vec<isize>> = inpt
         .lines()
         .map(|l| l.split(",").map(|s| s.parse().unwrap()).collect())
@@ -24,28 +24,38 @@ fn day_8_part_1(inpt: &str, connections: usize) -> usize {
     pairs.sort_by_key(|(i, j)| mag2(&coords[*i], &coords[*j]));
     pairs.reverse();
 
-    let mut circuits: Vec<BTreeSet<usize>> = coords
+    let circuits: Vec<BTreeSet<usize>> = coords
         .iter()
         .enumerate()
         .map(|(i, _)| [i].into_iter().collect())
         .collect();
 
+    (coords, pairs, circuits)
+}
+
+fn connect(pairs: &mut Vec<(usize, usize)>, circuits: &mut Vec<BTreeSet<usize>>) {
+    let (i, j) = pairs.pop().unwrap();
+    let c1 = (0..circuits.len())
+        .find(|c| circuits[*c].contains(&i))
+        .unwrap();
+    let c2 = (0..circuits.len())
+        .find(|c| circuits[*c].contains(&j))
+        .unwrap();
+
+    if c1 != c2 {
+        let mut cs1 = circuits.remove(usize::max(c1, c2));
+        let mut cs2 = circuits.remove(usize::min(c1, c2));
+
+        cs1.append(&mut cs2);
+        circuits.push(cs1);
+    }
+}
+
+fn day_8_part_1(inpt: &str, connections: usize) -> usize {
+    let (_coords, mut pairs, mut circuits) = setup(inpt);
+
     for _ in 0..connections {
-        let (i, j) = pairs.pop().unwrap();
-        let c1 = (0..circuits.len())
-            .find(|c| circuits[*c].contains(&i))
-            .unwrap();
-        let c2 = (0..circuits.len())
-            .find(|c| circuits[*c].contains(&j))
-            .unwrap();
-
-        if c1 != c2 {
-            let mut cs1 = circuits.remove(usize::max(c1, c2));
-            let mut cs2 = circuits.remove(usize::min(c1, c2));
-
-            cs1.append(&mut cs2);
-            circuits.push(cs1);
-        }
+        connect(&mut pairs, &mut circuits);
     }
 
     let mut circuit_lens: Vec<usize> = circuits.into_iter().map(|c| c.len()).collect();
@@ -54,8 +64,16 @@ fn day_8_part_1(inpt: &str, connections: usize) -> usize {
     circuit_lens.into_iter().take(3).product()
 }
 
-fn _day_8_part_2(_inpt: &str) -> usize {
-    todo!()
+fn day_8_part_2(inpt: &str) -> usize {
+    let (coords, mut pairs, mut circuits) = setup(inpt);
+
+    loop {
+        let (i, j) = *pairs.last().unwrap();
+        connect(&mut pairs, &mut circuits);
+        if circuits.len() == 1 {
+            break (coords[i][0] * coords[j][0]) as usize;
+        }
+    }
 }
 
 fn main() {
@@ -65,12 +83,12 @@ fn main() {
         inpt
     };
     println!("Part 1\t{}", day_8_part_1(&inpt, 1000 + 1));
-    // println!("Part 2\t{}", day_8_part_2(&inpt));
+    println!("Part 2\t{}", day_8_part_2(&inpt));
 }
 
 #[cfg(test)]
 mod tests {
-    use super::day_8_part_1;
+    use super::{day_8_part_1, day_8_part_2};
 
     const STR_INPT: &str = "162,817,812
 57,618,57
@@ -98,8 +116,8 @@ mod tests {
         assert_eq!(day_8_part_1(STR_INPT, 10), 40);
     }
 
-    // #[test]
-    // fn example2() {
-    //     assert_eq!(day_8_part_2(STR_INPT), 0);
-    // }
+    #[test]
+    fn example2() {
+        assert_eq!(day_8_part_2(STR_INPT), 25272);
+    }
 }
