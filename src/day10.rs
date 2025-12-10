@@ -4,6 +4,7 @@ use std::{
 };
 
 use itertools::Itertools;
+use pathfinding::directed::astar::astar;
 
 struct Line {
     lights: BTreeSet<usize>,
@@ -59,33 +60,6 @@ fn do_buttons(bs: &[&BTreeSet<usize>]) -> BTreeSet<usize> {
         })
 }
 
-fn bags_of(
-    elems: usize,
-    bag_size: usize,
-) -> Box<dyn Iterator<Item = std::collections::BTreeMap<usize, usize>>> {
-    if bag_size == 0 {
-        return Box::new(std::iter::once(BTreeMap::new()));
-    }
-    Box::new(bags_of(elems, bag_size - 1).flat_map(move |bag| {
-        let max_elem = bag.first_key_value().map(|(k, _)| *k).unwrap_or(elems - 1);
-
-        (0..=max_elem).map(move |i| {
-            let mut bag_ = bag.clone();
-            bag_.entry(i).and_modify(|c| *c += 1).or_insert(1);
-            bag_
-        })
-    }))
-}
-
-fn do_joltage(bs: &[BTreeSet<usize>], js: &BTreeMap<usize, usize>) -> BTreeMap<usize, usize> {
-    js.iter()
-        .flat_map(|(k, v)| bs.get(*k).unwrap().iter().map(|i| (*i, *v)))
-        .fold(BTreeMap::new(), |mut p, (k, v)| {
-            p.entry(k).and_modify(|v_| *v_ += v).or_insert(v);
-            p
-        })
-}
-
 fn day_10_part_1(inpt: &str) -> usize {
     let lines = parse_input(inpt);
     lines
@@ -113,15 +87,35 @@ fn day_10_part_2(inpt: &str) -> usize {
                 .filter(|(_k, v)| *v > 0)
                 .collect();
 
-            (0..)
-                .find(|n| {
-                    bags_of(line.buttons.len(), *n).any(|presses| {
-                        let total = do_joltage(&line.buttons, &presses);
-                        total == target
+            let neighbours = |s: &BTreeMap<usize, usize>| -> Vec<(BTreeMap<usize, usize>, usize)> {
+                line.buttons
+                    .iter()
+                    .map(|b| {
+                        (
+                            b.iter().cloned().fold(s.clone(), |mut p, c| {
+                                p.entry(c).and_modify(|v| *v += 1).or_insert(1);
+                                p
+                            }),
+                            1,
+                        )
                     })
-                })
-                .unwrap()
+                    .collect()
+            };
+
+            let heuristic = |s: &BTreeMap<usize, usize>| -> usize {
+                target
+                    .iter()
+                    .map(|(k, v)| (s.get(k).cloned().unwrap_or(0) as isize - *v as isize).abs())
+                    .sum::<isize>() as usize
+            };
+
+            let success = |s: &BTreeMap<usize, usize>| s == &target;
+
+            let path = astar(&BTreeMap::new(), neighbours, heuristic, success);
+
+            path.expect("Cant solve!?").1
         })
+        .inspect(|x| println!("got {}", x))
         .sum()
 }
 
