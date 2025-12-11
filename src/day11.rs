@@ -50,8 +50,63 @@ fn day_11_part_1(inpt: &str) -> usize {
     }
 }
 
-fn _day_11_part_2(_inpt: &str) -> usize {
-    todo!()
+fn lookup(
+    index: &BTreeMap<String, BTreeSet<String>>,
+    memo: &mut BTreeMap<String, BTreeMap<u8, usize>>,
+    node: &str,
+) -> BTreeMap<u8, usize> {
+    if node == "svr" {
+        [(0, 1)].into_iter().collect()
+    } else if let Some(cached) = memo.get(node) {
+        cached.clone()
+    } else {
+        let res = index
+            .get(node)
+            .iter()
+            .flat_map(|x| x.iter())
+            .map(|x| lookup(index, memo, x))
+            .flat_map(|x| x.into_iter())
+            .map(|(flags, count)| {
+                (
+                    flags
+                        | match node {
+                            "fft" => 0x01,
+                            "dac" => 0x10,
+                            _ => 0,
+                        },
+                    count,
+                )
+            })
+            .fold(BTreeMap::new(), |mut p, (flags, c)| {
+                p.entry(flags).and_modify(|fc| *fc += c).or_insert(c);
+                p
+            });
+        memo.insert(node.to_owned(), res.clone());
+        res
+    }
+}
+
+// We could generalize these two functions but who can be bothered?
+fn day_11_part_2(inpt: &str) -> usize {
+    let neighbours: BTreeMap<String, BTreeSet<String>> = parse_input(inpt).into_iter().collect();
+    let index: BTreeMap<String, BTreeSet<String>> = neighbours
+        .into_iter()
+        .flat_map(|(s, es)| es.into_iter().map(move |e| (e, s.clone())))
+        .fold(BTreeMap::new(), |mut p, (e, s)| {
+            p.entry(e)
+                .and_modify(|ss| {
+                    ss.insert(s.clone());
+                })
+                .or_insert([s].into_iter().collect());
+            p
+        });
+
+    let mut memo: BTreeMap<String, BTreeMap<u8, usize>> = BTreeMap::new();
+
+    lookup(&index, &mut memo, "out")
+        .get(&0x11)
+        .cloned()
+        .unwrap_or(0)
 }
 
 fn main() {
@@ -61,12 +116,12 @@ fn main() {
         inpt
     };
     println!("Part 1\t{}", day_11_part_1(&inpt));
-    // println!("Part 2\t{}", day_11_part_2(&inpt));
+    println!("Part 2\t{}", day_11_part_2(&inpt));
 }
 
 #[cfg(test)]
 mod tests {
-    use super::day_11_part_1;
+    use super::{day_11_part_1, day_11_part_2};
 
     const STR_INPT: &str = "aaa: you hhh
 you: bbb ccc
@@ -84,8 +139,22 @@ iii: out";
         assert_eq!(day_11_part_1(STR_INPT), 5);
     }
 
-    // #[test]
-    // fn example2() {
-    //     assert_eq!(day_11_part_2(STR_INPT), _);
-    // }
+    const STR_INPT_2: &str = "svr: aaa bbb
+aaa: fft
+fft: ccc
+bbb: tty
+tty: ccc
+ccc: ddd eee
+ddd: hub
+hub: fff
+eee: dac
+dac: fff
+fff: ggg hhh
+ggg: out
+hhh: out";
+
+    #[test]
+    fn example2() {
+        assert_eq!(day_11_part_2(STR_INPT_2), 2);
+    }
 }
